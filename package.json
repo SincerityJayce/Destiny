@@ -1,0 +1,11 @@
+{
+  "name": "react-destiny",
+  "version": "1.0.0",
+  "description": "Wholistically smooth animations when moving components between parents.",
+  "main": "index.jsx",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
