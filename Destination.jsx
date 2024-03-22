@@ -2,7 +2,7 @@ import {useGrabbed, useAmIGrabbed} from 'grab';
 import { cssUpdater } from './useCss';
 import debounce from 'lodash.debounce';
 import { create } from 'zustand';
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import useMeasure from "react-use-measure";
 
 export const useLocations = create(()=>({}))
