@@ -3,12 +3,11 @@ import { useState, useEffect, useRef } from "react";
 import { create } from "zustand";
 
 
-
 export function useGetDestinedComponents() {
  const [itemsToRender, render] = useState([]);
  useEffect(() => {
   const renderItems = debounce(function (state) {
-   cleanUp(state)//unused
+   // cleanUp(state)//unused
    let v = Object.entries(state)
    let items = v.sort((a, b) => a[0]-b[0]).map(([key, value]) => value)
    render(items);
@@ -18,10 +17,10 @@ export function useGetDestinedComponents() {
  }, []);
  return itemsToRender;
 }
-function cleanUp(state){ //unused but might be a better lifecycle method
- Object.entries(state).forEach(([key,value])=>{if(value.cleanup){delete state[key]}})
- return state
-}
+// function cleanUp(state){ //unused but might be a better lifecycle method
+//  Object.entries(state).forEach(([key,value])=>{if(value.cleanup){delete state[key]}})
+//  return state
+// }
 
 
 export function useComponentRegistration(id,component){
@@ -40,7 +39,7 @@ export function useComponentRegistration(id,component){
 }
 
 const useDestinedComponents = create(()=>({}))
-const useDestinyPortals = create(()=>({})) 
+// const useDestinyPortals = create(()=>({})) 
 const get = useDestinedComponents.getState
 const add = (arg)=>{ useDestinedComponents.setState(arg) }
 const remove = key=>{ useDestinedComponents.setState(s=>{s&&delete s[key]; return s}) }

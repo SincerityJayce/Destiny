@@ -1,4 +1,4 @@
-import {useGrabbed, useAmIGrabbed} from 'grab';
+import {useGrabbed, useAmIGrabbed, grabbedItem} from 'grab';
 import debounce from 'lodash.debounce';
 import { create } from 'zustand';
 import { useEffect } from "react";
@@ -6,51 +6,51 @@ import useMeasure from "react-use-measure";
 
 export const useLocations = create(()=>({}))
 
-export const toLocation = (id,location)=>{ useLocations.setState({[id]:location}) }
-
-const destineGrabbedCard = (e) => { 
- const grabbedCard = useGrabbed.getState().card;
- if (!grabbedCard) return;
- toLocation( grabbedCard, [e.clientX,  e.clientY ] ) }; 
-
-create(()=>{window.addEventListener('mousemove', destineGrabbedCard);})
+/** Manually set a components destination
+ * @export
+ * @param {any} id
+ * @param {LocationArray} location 
+ * */
+export function toLocation (id,location){ useLocations.setState({[id]:location}) }
 
 export function useComponentDestiny(id, disableAuto=false) {
- const [ref, bounds, manual] = useMeasure({ debounce: 0 });
+ const [ref, { left, top }, manual] = useMeasure({ debounce: 0 });
+ useConsistentRerenders(manual)
 
- useEffect(() => {
-  refreshers.push(manual)
-  return ()=>{refreshers = refreshers.filter(r=>r!==manual)}
- })
-
- var { left, top } = bounds;
  const imBeingDragged = useAmIGrabbed(id);
-
  useEffect(() => {
-  if (imBeingDragged) return;
-  if (left === 0 && top === 0) return;
-  if (disableAuto) return;
-  console.log(ref.current)
-  toLocation(id, [left, top]);
-
+  if (imBeingDragged||disableAuto||(left === 0 && top === 0)) return;
+  else toLocation(id, [left, top]);
  }, [id, left, top, imBeingDragged]);
  
- return [ref, imBeingDragged];
+ return [ref];
 }
 
+create(()=>{window.addEventListener('mousemove', function destineGrabbedCard (e) { 
+ const grabbedCard = grabbedItem();
+ if (!grabbedCard) return;
+ toLocation( grabbedCard, [e.clientX,  e.clientY ] ) 
+})})
 
+// Rerendering
 var refreshers = []
-const useRerenders = create(()=>{ //this is inside a zustore to avoid double listeners
+const rendering = create(()=>{ //this is inside a zustore to avoid double listeners
  function triggerRerender(){refreshers.forEach(r=>r());} 
  const debouncedRerender = debounce(triggerRerender, 0)
  debouncedRerender()
  useGrabbed.subscribe(debouncedRerender)
 })
+function useConsistentRerenders(manual){
+ useEffect(() => {
+  refreshers.push(manual)
+  return ()=>{refreshers = refreshers.filter(r=>r!==manual)}
+ },[])
+}
 
-
-
-
-/////////////////////////////////////////  DESTINED ITEMS
-
-
-
+//Types
+/**
+ * @typedef LocationArray
+ * @type {array}
+ * @property {number} 0 - left
+ * @property {number} 1 - top
+ */

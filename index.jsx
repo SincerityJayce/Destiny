@@ -6,10 +6,10 @@ import { useAmIGrabbed, grab } from "grab";
 import { useStoredSprings } from "./springAnimation"
 import { useComponentRegistration, useGetDestinedComponents } from "./DestinedComponents";
 import { useComponentDestiny } from "./Destination";
+
 export {toLocation} from "./Destination";
 
-/**
- * This div represents the location that the destined component would normally be rendered. 
+/**This div represents the location that the destined component would normally be rendered. 
  * It passes the component to be rendered elsewhere, within DesinedItems.
  *
  * @export
@@ -25,9 +25,7 @@ export function Destination ({id, children, disableAuto=false}){
  return  <div ref={ref} style={{ pointerEvents:'none'}} ></div>
 }
 
-
-/**
- * Renders all the dragable components
+/**Renders all the dragable components
  * @export
  * @returns {JSX.Element}
  */
