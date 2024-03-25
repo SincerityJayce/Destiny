@@ -16,11 +16,11 @@ const fast = { mass: 1, tension: 400, friction: 45, precision: 0.05, progress: 0
 const slow = { mass: 10, tension: 200, friction: 50 };
 const trans = (x, y) => `translate3d(${x}px,${y}px,0)`; //centered
  
-var trailLength = 2 ;
+var trailLength = 1 ;
 function useSpringyVariable(coords=[0,0]) {
  const [trail, api] = useTrail(trailLength, (i) => ({
   xy: coords,
-  config: best,
+  config: fast,
  }));
  useEffect(() => { api.start({ xy: coords }); }, coords); 
  let final = { transform: trail[trailLength-1].xy.to(trans) };
@@ -33,6 +33,8 @@ function useSpringStorage(id){
 }
 
 export function SpringSimulators({ids}){
- return <>{ids.map(id=><HookProxy key={"proxyspring"+id} useHook={()=>useSpringStorage(id)}/>)}</>
+ return <>{ids.map(id=>
+ <HookProxy key={"proxyspring"+id} useHook={()=>useSpringStorage(id)}/>
+ )}</>
 }
 

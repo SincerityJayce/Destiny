@@ -6,20 +6,23 @@ import { useAmIGrabbed, grab } from "grab";
 import { useStoredSprings } from "./springAnimation"
 import { useComponentRegistration, useGetDestinedComponents } from "./DestinedComponents";
 import { useComponentDestiny } from "./Destination";
+export {toLocation} from "./Destination";
 
 /**
  * This div represents the location that the destined component would normally be rendered. 
  * It passes the component to be rendered elsewhere, within DesinedItems.
  *
  * @export
- * @param {{ id: any; component: JSX.Element; }} param0
+ * @param {{ id: any; children: React.ReactNode;  }} param0
  * @returns {JSX.Element}
  */
-export function Destination ({id,component}){
- const [ref] = useComponentDestiny(id);
- useComponentRegistration(id,component)
+export function Destination ({id, children, disableAuto=false}){
+ const [ref] = useComponentDestiny(id, disableAuto);
+ let Kids=()=><>{children}</>
+
+ useComponentRegistration(id, <Kids/>)
  // @ts-ignore
- return  <div ref={ref} className="subscribed-rerenders" ></div>
+ return  <div ref={ref} style={{ pointerEvents:'none'}} ></div>
 }
 
 
@@ -34,8 +37,8 @@ export function DestinedItems() {
  return <>
  <SpringSimulators ids={useMemo(()=>itemsToRender.map(({componentKey})=>componentKey),[itemsToRender])}/>
 
- {itemsToRender.map(({componentKey,Component}) => <DestinyDiv key={componentKey} id={componentKey}>
-  <Component key={"inner"+componentKey} />
+ {itemsToRender.map(({componentKey,Component}) => <DestinyDiv key={"outer"+componentKey} id={componentKey}>
+  {Component&&<Component />}
  </DestinyDiv>
  )}
  </>
@@ -45,8 +48,8 @@ function DestinyDiv({ id, children }) { // The springy movement is abstracted aw
  const springyMovement = useStoredSprings(s=>s[id])
  const unClickableWhileGrabbed = useAmIGrabbed(id) ? { pointerEvents: 'none' } : {};
 
- return <>{location && <animated.div style={{ ...unClickableWhileGrabbed, ...springyMovement, position:'absolute' }}
+ return <>{location && <animated.div style={{ ...unClickableWhileGrabbed, ...springyMovement, position:'absolute' }} 
   className='DESTINYDIV' onMouseDown={() => grab(id)}>
-  {children}
+    {children}
  </animated.div>}</>;
 }

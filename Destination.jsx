@@ -1,5 +1,4 @@
 import {useGrabbed, useAmIGrabbed} from 'grab';
-import { cssUpdater } from './useCss';
 import debounce from 'lodash.debounce';
 import { create } from 'zustand';
 import { useEffect } from "react";
@@ -7,7 +6,7 @@ import useMeasure from "react-use-measure";
 
 export const useLocations = create(()=>({}))
 
-const toLocation = (id,location)=>{ useLocations.setState({[id]:location}) }
+export const toLocation = (id,location)=>{ useLocations.setState({[id]:location}) }
 
 const destineGrabbedCard = (e) => { 
  const grabbedCard = useGrabbed.getState().card;
@@ -16,14 +15,22 @@ const destineGrabbedCard = (e) => {
 
 create(()=>{window.addEventListener('mousemove', destineGrabbedCard);})
 
-export function useComponentDestiny(id) {
- const [ref, bounds] = useMeasure({ debounce: 0 });
+export function useComponentDestiny(id, disableAuto=false) {
+ const [ref, bounds, manual] = useMeasure({ debounce: 0 });
+
+ useEffect(() => {
+  refreshers.push(manual)
+  return ()=>{refreshers = refreshers.filter(r=>r!==manual)}
+ })
+
  var { left, top } = bounds;
  const imBeingDragged = useAmIGrabbed(id);
 
  useEffect(() => {
   if (imBeingDragged) return;
   if (left === 0 && top === 0) return;
+  if (disableAuto) return;
+  console.log(ref.current)
   toLocation(id, [left, top]);
 
  }, [id, left, top, imBeingDragged]);
@@ -31,23 +38,13 @@ export function useComponentDestiny(id) {
  return [ref, imBeingDragged];
 }
 
+
+var refreshers = []
 const useRerenders = create(()=>{ //this is inside a zustore to avoid double listeners
- const i = 0.5
- var flickSize = i
- const flickerCss = cssUpdater()
- function triggerRerender(){
-   const flick = ()=>{
-    flickSize*= -1
-    flickerCss('.subscribed-rerenders', //this class is added to the element that needs to be rerendered
-    {width:i+flickSize, height:i+flickSize})
-   }
-   flick()
- }
+ function triggerRerender(){refreshers.forEach(r=>r());} 
  const debouncedRerender = debounce(triggerRerender, 0)
-  
  debouncedRerender()
  useGrabbed.subscribe(debouncedRerender)
- window.addEventListener('mouseup', ()=>{setTimeout(()=>{(flickSize = 0.5)&&triggerRerender()},100);debouncedRerender()})
 })
 
 
