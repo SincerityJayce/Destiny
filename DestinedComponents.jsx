@@ -1,5 +1,5 @@
 import debounce from "lodash.debounce"
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { create } from "zustand";
 
 
@@ -26,7 +26,7 @@ export function useGetDestinedComponents() {
 export function useComponentRegistration(id,component){
  const {current} = useRef(uniqueId())
 
- useEffect(()=>{
+ useLayoutEffect(()=>{
   // let registrations = Object.entries(get())
   // var [oldKey,alreadyRegistered] = registrations.find(([key,existing])=>existing.id===id&&(key!==current))||[]//this is halfway code
   // if(alreadyRegistered){alreadyRegistered.cleanup=false}
@@ -44,3 +44,4 @@ const get = useDestinedComponents.getState
 const add = (arg)=>{ useDestinedComponents.setState(arg) }
 const remove = key=>{ useDestinedComponents.setState(s=>{s&&delete s[key]; return s}) }
 var id = 0; function uniqueId(){return id++};
+ 

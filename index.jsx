@@ -16,13 +16,14 @@ export {toLocation} from "./Destination";
  * @param {{ id: any; children: React.ReactNode;  }} param0
  * @returns {JSX.Element}
  */
-export function Destination ({id, children, disableAuto=false}){
- const [ref] = useComponentDestiny(id, disableAuto);
+export function Destination ({id, children, disableAuto=false,ignore=[]}){
+ const [ref] = useComponentDestiny(id, {disableAuto,ignore});
  let Kids=()=><>{children}</>
 
  useComponentRegistration(id, <Kids/>)
- // @ts-ignore
- return  <div ref={ref} style={{ pointerEvents:'none'}} ></div>
+
+ // Dissapearing div that is used to get the parent node and the children
+ return  <div ref={el=>ref(el?.parentNode)} style={{ display:'none'}} ></div>
 }
 
 /**Renders all the dragable components
@@ -46,7 +47,7 @@ function DestinyDiv({ id, children }) { // The springy movement is abstracted aw
  const springyMovement = useStoredSprings(s=>s[id])
  const unClickableWhileGrabbed = useAmIGrabbed(id) ? { pointerEvents: 'none' } : {};
 
- return <>{location && <animated.div style={{ ...unClickableWhileGrabbed, ...springyMovement, position:'absolute' }} 
+ return <>{location && <animated.div style={{ ...unClickableWhileGrabbed, ...springyMovement, position:'absolute', background:"blue" }} 
   className='DESTINYDIV' onMouseDown={() => grab(id)}>
     {children}
  </animated.div>}</>;
