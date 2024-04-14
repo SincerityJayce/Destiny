@@ -1,54 +1,103 @@
-import { useMemo } from "react"
-import { SpringSimulators } from "src/assets/useDestiny/springAnimation";
-import { animated } from "@react-spring/web";
-import { useAmIGrabbed, grab } from "grab";
+// IN PORTAL
+export function Destination ({id, children, disableAuto=false, ignore=[], ref, style, ...p}) { 
+ useBirthRegistry(id, children)
+ const [measureRef] = useComponentDestiny(id, {disableAuto,ignore});
+ const mergedRef = el=>{measureRef(el);ref&&(typeof ref == "function"?ref(el):ref.current=el)}
+ const mergedStyle = {...style, opacity:"0", pointerEvents:'none'}
 
-import { useStoredSprings } from "./springAnimation"
-import { useComponentRegistration, useGetDestinedComponents } from "./DestinedComponents";
-import { useComponentDestiny } from "./Destination";
-
-export {toLocation} from "./Destination";
-
-/**This div represents the location that the destined component would normally be rendered. 
- * It passes the component to be rendered elsewhere, within DesinedItems.
- *
- * @export
- * @param {{ id: any; children: React.ReactNode;  }} param0
- * @returns {JSX.Element}
- */
-export function Destination ({id, children, disableAuto=false,ignore=[]}){
- const [ref] = useComponentDestiny(id, {disableAuto,ignore});
- let Kids=()=><>{children}</>
-
- useComponentRegistration(id, <Kids/>)
-
- // Dissapearing div that is used to get the parent node and the children
- return  <div ref={el=>ref(el?.parentNode)} style={{ display:'none'}} ></div>
+ return <div ref={mergedRef} style={mergedStyle} {...p} >
+  {children}
+ </div>
 }
 
-/**Renders all the dragable components
- * @export
- * @returns {JSX.Element}
- */
-export function DestinedItems() {
- const itemsToRender = useGetDestinedComponents()
+// OUT PORTAL
+export const DestinedItems =()=><> {useDestinedComponents().map((props) => 
+<RenderedDestinyItem key={props.id} {...props}/> 
+)} </>
+const RenderedDestinyItem = memo(({id,Component=()=><></>})=><DestinyDiv  id={id}>
+ <Component />
+</DestinyDiv>) //these are external for performance
+const DestinyDiv = ({ id, children }) => <animated.div style={{  ...useDestinyMovement(id), 
+ pointerEvents:useAmIGrabbed(id)?'none':'auto',
+ position:'absolute'}} 
+ onMouseDown={() => grab(id)}>
+ {children}
+</animated.div>
 
- return <>
- <SpringSimulators ids={useMemo(()=>itemsToRender.map(({componentKey})=>componentKey),[itemsToRender])}/>
+// Force Component Positions to Update
+export const remeasure = (ids) => { 
+ (ids ? Array.from(ids).flat() : Object.values(remeasurers))
+ .forEach(id => remeasurers[id] && remeasurers[id]());
+};
 
- {itemsToRender.map(({componentKey,Component}) => <DestinyDiv key={"outer"+componentKey} id={componentKey}>
-  {Component&&<Component />}
- </DestinyDiv>
- )}
- </>
+/////////////////// Movement_Logic
+const useStoredSprings = create(immer(()=>({}))), getSprings = useStoredSprings.getState
+
+const moveObjectToDestination = (id,bounds)=>{ //IN
+ const set = useStoredSprings.setState
+ if (bounds.left && bounds.top) bounds.xy = [bounds.left, bounds.top]
+ let springs = getSprings()[id]
+
+ const triageSpringUpdate_OrCreateNewOne = ([styleProperty, value])=> {
+  if(springs?.[styleProperty]) springs[styleProperty].start(value)
+  else return [styleProperty, new SpringValue(value, {config: {mass: 3, tension: 1800, friction: 230, precision: 0.1}})]
+ }
+ let newSprings = Object.entries(bounds).map( triageSpringUpdate_OrCreateNewOne ).filter(t=>t)
+ newSprings.length && set( s=>{ s[id]=s[id]||{}; newSprings.forEach(([styleProperty,spring])=>{s[id][styleProperty]=spring})})
 }
 
-function DestinyDiv({ id, children }) { // The springy movement is abstracted away here
- const springyMovement = useStoredSprings(s=>s[id])
- const unClickableWhileGrabbed = useAmIGrabbed(id) ? { pointerEvents: 'none' } : {};
-
- return <>{location && <animated.div style={{ ...unClickableWhileGrabbed, ...springyMovement, position:'absolute', background:"blue" }} 
-  className='DESTINYDIV' onMouseDown={() => grab(id)}>
-    {children}
- </animated.div>}</>;
+function useDestinyMovement(id){ //OUT
+ const storedSprings = useStoredSprings(s=>s[id])
+ if(!storedSprings) return {}
+ const styleObject = Object.entries(storedSprings).reduce((style,[variable,spring])=>{
+  if(variable=="xy") style.transform = spring.to((l,t)=>`translate(${l}px,${t}px)`)
+  if(["width","height"].includes(variable)) style[variable]=spring.to(w=>w)
+  return style
+ },{})
+ return styleObject //style object, from springs 
 }
+/////////////////// StoredComponents
+const useDestinedChildren = create(()=>({})), getComponents = useDestinedChildren.getState, set = useDestinedChildren.setState
+var id = 0, advocate = s=>{const instance = id++;set({[instance]:s}); return ()=>set(s=>omit(s, [instance]),true)}
+ 
+function useBirthRegistry(id,component){ //IN
+ useLayoutEffect(()=>advocate({id, Component:(memo(()=>component))}),[])
+}
+
+function useDestinedComponents() { //OUT
+ const [itemsToRender, render] = useState([]);
+ useEffect(() => {
+  const renderItems = debounce(s=>{render(Object.values(s));}, 5); renderItems(getComponents());
+ return useDestinedChildren.subscribe(renderItems)}, []);
+ return itemsToRender;
+}
+
+/////////////////// StoredDestinations
+function useComponentDestiny(id, {disableAuto=false, ignore=[]}) { // locate inside divs
+ const [measureRef, bounds , manual] = useMeasure({ debounce: 0 });
+ useManualRemeasures(manual,id)
+ const imBeingDragged = useAmIGrabbed(id);
+ useLayoutEffect(() => {
+  if (imBeingDragged||disableAuto||bounds.left==0&&bounds.top==0) return;
+  var mutableBounds= {...bounds}
+  ignore.forEach(i=>delete mutableBounds[i]);
+  moveObjectToDestination(id, mutableBounds);
+ }, [id, bounds]);
+ return [measureRef];
+}
+
+window.addEventListener('mousemove', function destineGrabbedItem (e) { // click and drag
+ const grabbedCard = grabbedItem(); if (!grabbedCard) return;
+ let activeSprings = getSprings()[grabbedCard]; if (!activeSprings) return;
+ let {width,height} = {width:activeSprings.width.animation.to, height:activeSprings.height.animation.to}
+ moveObjectToDestination( grabbedCard, {left:e.clientX-width/2,  top:e.clientY-height/2} ) 
+})
+ /////////////////// Remeasure_Trigger 
+var remeasurers = {};
+function useManualRemeasures(manual, id) {
+ useEffect(() => {
+  remeasurers[id] = (debounce(manual, 0));
+  return () => { delete remeasurers[id]; };
+ }, [manual, id]);
+}
+ 
