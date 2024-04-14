@@ -19,13 +19,12 @@ export function Destination ({id, children, disableAuto=false, ignore=[], ref, s
 export const DestinedItems =()=><> {useDestinedComponents().map((props) => 
 <RenderedDestinyItem key={props.id} {...props}/> 
 )} </>
-const RenderedDestinyItem = memo(({id,Component=()=><></>})=><DestinyDiv  id={id}>
- <Component />
+const RenderedDestinyItem = memo((p)=><DestinyDiv  {...p}>
 </DestinyDiv>) //these are external for performance
-const DestinyDiv = ({ id, children }) => <animated.div style={{  ...useDestinyMovement(id), 
+const DestinyDiv = ({ id, Component, zIndex }) => <animated.div style={{  ...useDestinyMovement(id), 
  pointerEvents:useAmIGrabbed(id)?'none':'auto',
- position:'absolute'}} 
+ position:'absolute', zIndex}} 
  onMouseDown={() => grab(id)}>
- {children}
+ <Component/>
 </animated.div>
 

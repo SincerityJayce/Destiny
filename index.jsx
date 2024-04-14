@@ -1,6 +1,9 @@
+import { useEffect } from "react";
+
 // IN PORTAL
-export function Destination ({id, children, disableAuto=false, ignore=[], ref, style, ...p}) { 
- useBirthRegistry(id, children)
+export function Destination ({id, children, zIndex, disableAuto=false, ignore=[], ref, style, ...p}) { 
+ useStoreZindex({[id]:zIndex})
+ useLayoutEffect(()=>advocateForComponent({id, Component:memo(()=>children)}),[])
  const [measureRef] = useComponentDestiny(id, {disableAuto,ignore});
  const mergedRef = el=>{measureRef(el);ref&&(typeof ref == "function"?ref(el):ref.current=el)}
  const mergedStyle = {...style, opacity:"0", pointerEvents:'none'}
@@ -12,17 +15,16 @@ export function Destination ({id, children, disableAuto=false, ignore=[], ref, s
 
 // OUT PORTAL
 export const DestinedItems =()=><> {useDestinedComponents().map((props) => 
-<RenderedDestinyItem key={props.id} {...props}/> 
-)} </>
-const RenderedDestinyItem = memo(({id,Component=()=><></>})=><DestinyDiv  id={id}>
- <Component />
-</DestinyDiv>) //these are external for performance
-const DestinyDiv = ({ id, children }) => <animated.div style={{  ...useDestinyMovement(id), 
- pointerEvents:useAmIGrabbed(id)?'none':'auto',
- position:'absolute'}} 
- onMouseDown={() => grab(id)}>
- {children}
-</animated.div>
+ <RenderedDestinyItem key={props.id} {...props}/> 
+ )} </>
+ const RenderedDestinyItem = memo((p)=><DestinyDiv  {...p}>
+ </DestinyDiv>) //these are external for performance
+ const DestinyDiv = ({ id, Component}) => <animated.div style={{  ...useDestinyMovement(id), 
+  pointerEvents:useAmIGrabbed(id)?'none':'auto',
+  position:'absolute', zIndex:useZIndex(s=>s[id])}} 
+  onMouseDown={() => grab(id)}>
+  <Component/>
+ </animated.div>
 
 // Force Component Positions to Update
 export const remeasure = (ids) => { 
@@ -57,13 +59,9 @@ function useDestinyMovement(id){ //OUT
  return styleObject //style object, from springs 
 }
 /////////////////// StoredComponents
-const useDestinedChildren = create(()=>({})), getComponents = useDestinedChildren.getState, set = useDestinedChildren.setState
-var id = 0, advocate = s=>{const instance = id++;set({[instance]:s}); return ()=>set(s=>omit(s, [instance]),true)}
+const useDestinedChildren = create(immer(()=>({}))), getComponents = useDestinedChildren.getState, set = useDestinedChildren.setState
+var id = 0, advocateForComponent = s=>{const instance = id++;set({[instance]:s}); return ()=>set(s=>omit(s, [instance]),true)}
  
-function useBirthRegistry(id,component){ //IN
- useLayoutEffect(()=>advocate({id, Component:(memo(()=>component))}),[])
-}
-
 function useDestinedComponents() { //OUT
  const [itemsToRender, render] = useState([]);
  useEffect(() => {
@@ -100,4 +98,10 @@ function useManualRemeasures(manual, id) {
   return () => { delete remeasurers[id]; };
  }, [manual, id]);
 }
+
+/////////////////// zIndex
+// this is important enough to be handled seperately
+const useZIndex= create((()=>({}))), useStoreZindex = (s) => useEffect(() => {useZIndex.setState(s)}, [s])
+
+
  

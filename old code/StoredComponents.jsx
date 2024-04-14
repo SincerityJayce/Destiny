@@ -10,8 +10,8 @@ export function useDestinedComponents() {
  return itemsToRender;
 }
 
-export function useBirthRegistry(id,component){
- useLayoutEffect(()=>advocate({id, Component:(memo(()=>component))}),[])
+export function useBirthRegistry(id,component,zIndex){
+ useLayoutEffect(()=>advocate({id, Component:(memo(()=>component)), zIndex}),[])
 }
 
  
